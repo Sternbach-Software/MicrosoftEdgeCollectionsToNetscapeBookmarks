@@ -4,7 +4,8 @@ import java.time.Instant
 data class Link(val folderTitle: String, val articleTitle: String, val url: String)
 fun main(args: Array<String>) {
     val epochSecond = Instant.now().epochSecond
-    Files.readAllLines(File("/Users/shmuel/Downloads/microsoft_edge_collections.tsv").toPath())
+    val downloads = "/Users/shmuel/Downloads/"
+    Files.readAllLines(File("${downloads}microsoft_edge_collections.tsv").toPath())
         .asSequence()
         .drop(1)
         .map {
@@ -22,22 +23,26 @@ fun main(args: Array<String>) {
                 }
         }
         .groupBy { it.folderTitle }
+        .filterKeys { !it.startsWith("Interesting science and psychology articles to read - part ") }
         .map { (title, list) ->
             joinToString(
                 list,
                 StringBuilder(),
                 "\n",
-                "<DT><H3 FOLDED ADD_DATE=\"$epochSecond\">$title</H3>\n<DL><p>\n",
-                "</DL><p>"
+                "\n\t<DT><H3 FOLDED>${title.replace("\"{2,}".toRegex(), "\"")}</H3>\n\t<DL><p>\n",
+                "\n\t</DL><p>"
             ) {
-                "<DT><A HREF=\"${it.url}\" ADD_DATE=\"$epochSecond\" LAST_VISIT=\"$epochSecond\" LAST_MODIFIED=\"$epochSecond\">${it.articleTitle}</A>"
+                "\t\t<DT><A HREF=\"${it.url}\">${it.articleTitle}</A>"
             }
         }
         .joinToString("\n", "<!DOCTYPE NETSCAPE-Bookmark-file-1>\n" +
                 "\t<HTML>\n" +
                 "\t<META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; charset=UTF-8\">\n" +
                 "\t<Title>Bookmarks</Title>\n" +
-                "\t<H1>Bookmarks</H1>", "</HTML>").also { println(it) }
+                "\t<H1>Bookmarks</H1>", "\n</HTML>").also {
+            println(it)
+            File(downloads, "Edge collections.html").writeText(it)
+                }
 }
 
 fun <T> joinToString(
